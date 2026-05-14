@@ -26,8 +26,17 @@ LEGAL_KNOWLEDGE = [
             "(4) cover damages. Statute of limitations is typically 4 years (UCC § 2-725)."
         ),
     },
-    # TODO: Thêm entry về luật lao động Việt Nam
-    # Gợi ý: id="labor_law", keywords=["lao động", "sa thải", ...], text="..."
+    {
+        "id": "labor_law_vn",
+        "keywords": ["lao động", "sa thải", "vi phạm", "hợp đồng lao động", "bồi thường", "thời hiệu"],
+        "text": (
+            "Theo Bộ luật Lao động Việt Nam 2019: (1) Thời hiệu khởi kiện tranh chấp lao động "
+            "cá nhân là 1 năm kể từ ngày phát hiện quyền lợi bị xâm phạm (Điều 192); (2) Người lao động "
+            "bị sa thải trái pháp luật được phục hồi工作, trả lương và đóng BHXH trong thời gian không được làm việc; "
+            "(3) Bồi thường nếu không phục hồi工作: ít nhất 2 tháng lương theo hợp đồng; "
+            "(4) Thời hiệu khiếu nại quyết định kỷ luật lao động là 180 ngày (Điều 192)."
+        ),
+    },
 ]
 
 
@@ -41,13 +50,22 @@ def search_legal_knowledge(query: str) -> str:
     return "Không tìm thấy thông tin liên quan."
 
 
-# TODO: Tạo tool check_statute_of_limitations
-# Gợi ý: nhận case_type (str), trả về thời hiệu khởi kiện
-# @tool
-# def check_statute_of_limitations(case_type: str) -> str:
-#     """Kiểm tra thời hiệu khởi kiện."""
-#     # YOUR CODE HERE
-#     pass
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Kiểm tra thời hiệu khởi kiện theo loại vụ việc."""
+    statutes = {
+        "contract": "Thời hiệu khởi kiện vi phạm hợp đồng: 4 năm (UCC § 2-725) hoặc 6 năm theo pháp luật Việt Nam.",
+        "nda": "Thời hiệu khởi kiện vi phạm NDA: 3 năm (DTSA, 18 U.S.C. § 1836).",
+        "labor": "Thời hiệu khởi kiện tranh chấp lao động cá nhân: 1 năm kể từ ngày phát hiện (Bộ luật Lao động VN 2019, Điều 192).",
+        "trade_secret": "Thời hiệu khởi kiện vi phạm bí mật thương mại: 3 năm kể từ ngày phát hiện (DTSA).",
+        "tort": "Thời hiệu khởi kiện bồi thường thiệt hại ngoài hợp đồng: 3 năm (pháp luật Việt Nam).",
+        "tax": "Thời hiệu truy thu thuế: 10 năm đối với trường hợp trốn thuế, 5 năm đối với các trường hợp khác.",
+    }
+    case_lower = case_type.lower()
+    for key, value in statutes.items():
+        if key in case_lower:
+            return value
+    return f"Không tìm thấy thời hiệu cho loại vụ việc '{case_type}'. Các loại hỗ trợ: contract, nda, labor, trade_secret, tort, tax."
 
 
 async def main():
@@ -55,7 +73,7 @@ async def main():
     llm = get_llm()
     
     # TODO: Thêm tool mới vào danh sách
-    tools = [search_legal_knowledge]  # Thêm check_statute_of_limitations vào đây
+    tools = [search_legal_knowledge, check_statute_of_limitations]
     llm_with_tools = llm.bind_tools(tools)
     
     question = "Thời hiệu khởi kiện vụ vi phạm hợp đồng là bao lâu?"
@@ -79,7 +97,8 @@ async def main():
             
             if tool_call["name"] == "search_legal_knowledge":
                 tool_result = search_legal_knowledge.invoke(tool_call["args"])
-            # TODO: Thêm xử lý cho check_statute_of_limitations
+            elif tool_call["name"] == "check_statute_of_limitations":
+                tool_result = check_statute_of_limitations.invoke(tool_call["args"])
             
             if tool_result:
                 messages.append(ToolMessage(content=tool_result, tool_call_id=tool_call["id"]))
